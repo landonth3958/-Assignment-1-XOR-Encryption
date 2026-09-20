@@ -62,6 +62,7 @@ int main() {
         char key[256];
 
         printf("Enter the message to encrypt: ");
+        scanf("%s", message);
         fgets(message, sizeof(message), stdin);
         message[strcspn(message, "\n")] = '\0';
 
