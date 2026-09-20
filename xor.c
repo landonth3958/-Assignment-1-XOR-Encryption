@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 void xorEncrypt(char *message, const char *key) {
     int keyLen = strlen(key);
