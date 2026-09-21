@@ -27,6 +27,7 @@ void encryptFile(const char* filename, const char* message, const char* key) {
  *   0  = success
  *  -1  = file could not be opened (doesn't exist)
  *  -2  = memory allocation failed
+ *  -3  = file is empty
  */
 int decryptFile(const char* filename, const char* key) {
     FILE* file = fopen(filename, "rb");
@@ -38,6 +39,12 @@ int decryptFile(const char* filename, const char* key) {
     fseek(file, 0, SEEK_END);
     long fileSize = ftell(file);
     fseek(file, 0, SEEK_SET);
+
+    if (fileSize == 0) {
+        printf("Error: file \"%s\" is empty.\n", filename);
+        fclose(file);
+        return -3;
+    }
 
     char* buffer = (char*)malloc(fileSize + 1);
     if (!buffer) {
@@ -88,13 +95,23 @@ int main() {
         printf("Enter the key: ");
         scanf("%s", key);
 
-        /* Keep asking for a filename until one exists */
         int result;
         do {
             printf("Enter the filename to decrypt: ");
             scanf("%s", filename);
 
             result = decryptFile(filename, key);
+
+            if (result == -3) {
+                char tryAgain[10];
+                printf("Would you like to try a different file? (yes/no): ");
+                scanf("%s", tryAgain);
+                if (strcmp(tryAgain, "no") == 0) {
+                    break;
+                }
+                /* if "yes" (or anything else), loop continues and re-prompts for filename */
+                result = -1; /* force loop to continue */
+            }
         } while (result == -1);
 
     }
