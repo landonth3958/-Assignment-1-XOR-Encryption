@@ -2,9 +2,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-void xorEncrypt(char* message, const char* key) {
+void xorEncrypt(char* message, const char* key, size_t len) {
     int keyLen = strlen(key);
-    for (int i = 0; message[i] != '\0'; ++i) {
+    for (size_t i = 0; i < len; ++i) {
         message[i] ^= key[i % keyLen];
     }
 }
@@ -16,8 +16,9 @@ void encryptFile(const char* filename, const char* message, const char* key) {
         return;
     }
 
-    xorEncrypt((char*)message, key);
-    fwrite(message, 1, strlen(message), file);
+    size_t len = strlen(message);
+    xorEncrypt((char*)message, key, len);
+    fwrite(message, 1, len, file);
 
     fclose(file);
 }
@@ -53,22 +54,53 @@ int decryptFile(const char* filename, const char* key) {
         return -2;
     }
 
-    fread(buffer, 1, fileSize, file);
-    buffer[fileSize] = '\0';
+    size_t bytesRead = fread(buffer, 1, fileSize, file);
+    buffer[bytesRead] = '\0';
 
-    xorEncrypt(buffer, key);
+    xorEncrypt(buffer, key, bytesRead);
 
-    printf("%s\n", buffer);
+    fwrite(buffer, 1, bytesRead, stdout);
+    printf("\n");
 
     free(buffer);
     fclose(file);
     return 0;
 }
 
+/*
+ * Reads a line of arbitrary length from stdin into a dynamically
+ * allocated buffer. Caller must free() the returned pointer.
+ * Returns NULL on allocation failure.
+ */
+char* readLine(void) {
+    size_t capacity = 256;
+    size_t length = 0;
+    char* buffer = (char*)malloc(capacity);
+    if (!buffer) {
+        return NULL;
+    }
+
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) {
+        if (length + 1 >= capacity) {
+            capacity *= 2;
+            char* newBuffer = (char*)realloc(buffer, capacity);
+            if (!newBuffer) {
+                free(buffer);
+                return NULL;
+            }
+            buffer = newBuffer;
+        }
+        buffer[length++] = (char)c;
+    }
+    buffer[length] = '\0';
+
+    return buffer;
+}
+
 int main() {
     char choice[10];
 
-    /* Keep asking until the user enters a valid choice */
     while (1) {
         printf("Enter 'encrypt' or 'decrypt': ");
         scanf("%s", choice);
@@ -81,14 +113,16 @@ int main() {
     }
 
     if (strcmp(choice, "encrypt") == 0) {
-        char message[256];
         char filename[256];
         char key[256];
 
         printf("Enter the message to encrypt: ");
         scanf(" ");
-        fgets(message, sizeof(message), stdin);
-        message[strcspn(message, "\n")] = '\0';
+        char* message = readLine();
+        if (!message) {
+            printf("Memory allocation failed while reading message.\n");
+            return 1;
+        }
 
         printf("Enter the filename: ");
         scanf("%s", filename);
@@ -97,6 +131,8 @@ int main() {
         scanf("%s", key);
 
         encryptFile(filename, message, key);
+
+        free(message);
     }
     else {
         char filename[256];
