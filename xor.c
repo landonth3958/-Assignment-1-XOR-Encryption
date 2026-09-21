@@ -2,42 +2,48 @@
 #include <string.h>
 #include <stdlib.h>
 
-void xorEncrypt(char *message, const char *key) {
+void xorEncrypt(char* message, const char* key) {
     int keyLen = strlen(key);
     for (int i = 0; message[i] != '\0'; ++i) {
         message[i] ^= key[i % keyLen];
     }
 }
 
-void encryptFile(const char *filename, const char *message, const char *key) {
-    FILE *file = fopen(filename, "wb");
+void encryptFile(const char* filename, const char* message, const char* key) {
+    FILE* file = fopen(filename, "wb");
     if (!file) {
         printf("Error opening file for writing.\n");
         return;
     }
 
-    xorEncrypt((char *)message, key);
+    xorEncrypt((char*)message, key);
     fwrite(message, 1, strlen(message), file);
 
     fclose(file);
 }
 
-void decryptFile(const char *filename, const char *key) {
-    FILE *file = fopen(filename, "rb");
+/*
+ * Return codes:
+ *   0  = success
+ *  -1  = file could not be opened (doesn't exist)
+ *  -2  = memory allocation failed
+ */
+int decryptFile(const char* filename, const char* key) {
+    FILE* file = fopen(filename, "rb");
     if (!file) {
-        printf("Error opening file for reading.\n");
-        return;
+        printf("Error: file \"%s\" does not exist.\n", filename);
+        return -1;
     }
 
     fseek(file, 0, SEEK_END);
     long fileSize = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    char *buffer = (char *)malloc(fileSize + 1);
+    char* buffer = (char*)malloc(fileSize + 1);
     if (!buffer) {
         printf("Memory allocation failed.\n");
         fclose(file);
-        return;
+        return -2;
     }
 
     fread(buffer, 1, fileSize, file);
@@ -49,6 +55,7 @@ void decryptFile(const char *filename, const char *key) {
 
     free(buffer);
     fclose(file);
+    return 0;
 }
 
 int main() {
@@ -73,18 +80,25 @@ int main() {
         scanf("%s", key);
 
         encryptFile(filename, message, key);
-    } else if (strcmp(choice, "decrypt") == 0) {
+    }
+    else if (strcmp(choice, "decrypt") == 0) {
         char filename[256];
         char key[256];
-
-        printf("Enter the filename to decrypt: ");
-        scanf("%s", filename);
 
         printf("Enter the key: ");
         scanf("%s", key);
 
-        decryptFile(filename, key);
-    } else {
+        /* Keep asking for a filename until one exists */
+        int result;
+        do {
+            printf("Enter the filename to decrypt: ");
+            scanf("%s", filename);
+
+            result = decryptFile(filename, key);
+        } while (result == -1);
+
+    }
+    else {
         printf("Invalid choice.\n");
     }
 
