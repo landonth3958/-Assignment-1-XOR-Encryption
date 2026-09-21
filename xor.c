@@ -67,8 +67,18 @@ int decryptFile(const char* filename, const char* key) {
 
 int main() {
     char choice[10];
-    printf("Enter 'encrypt' or 'decrypt': ");
-    scanf("%s", choice);
+
+    /* Keep asking until the user enters a valid choice */
+    while (1) {
+        printf("Enter 'encrypt' or 'decrypt': ");
+        scanf("%s", choice);
+
+        if (strcmp(choice, "encrypt") == 0 || strcmp(choice, "decrypt") == 0) {
+            break;
+        }
+
+        printf("Invalid choice. Please enter 'encrypt' or 'decrypt'.\n");
+    }
 
     if (strcmp(choice, "encrypt") == 0) {
         char message[256];
@@ -88,7 +98,7 @@ int main() {
 
         encryptFile(filename, message, key);
     }
-    else if (strcmp(choice, "decrypt") == 0) {
+    else {
         char filename[256];
         char key[256];
 
@@ -109,14 +119,9 @@ int main() {
                 if (strcmp(tryAgain, "no") == 0) {
                     break;
                 }
-                /* if "yes" (or anything else), loop continues and re-prompts for filename */
-                result = -1; /* force loop to continue */
+                result = -1;
             }
         } while (result == -1);
-
-    }
-    else {
-        printf("Invalid choice.\n");
     }
 
     return 0;
